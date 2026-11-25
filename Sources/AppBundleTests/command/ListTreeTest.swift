@@ -1,19 +1,21 @@
 @testable import AppBundle
 import Common
-import XCTest
+import Foundation
+import Testing
 
 @MainActor
-final class ListTreeTest: XCTestCase {
-    override func setUp() async throws { setUpWorkspacesForTests() }
+@Suite(.serializedGlobally)
+struct ListTreeTest {
+    init() { setUpWorkspacesForTests() }
 
-    func testParse() {
+    @Test func testParse() {
         assertNotNil(parseCommand("list-tree --focused").cmdOrNil)
         assertNotNil(parseCommand("list-tree --workspace a").cmdOrNil)
         assertNotNil(parseCommand("list-tree --workspace a --json").cmdOrNil)
         assertEquals(parseCommand("list-tree").errorOrNil, "Mandatory option is not specified (--focused|--workspace)")
         assertEquals(
             parseCommand("list-tree --focused --workspace a").errorOrNil,
-            "ERROR: Conflicting options: --focused, --workspace",
+            "ERROR: Conflicting flags: --focused, --workspace",
         )
     }
 
@@ -30,7 +32,7 @@ final class ListTreeTest: XCTestCase {
         }
     }
 
-    func testRunNested() async {
+    @Test func testRunNested() async {
         _ = nestedWorkspace()
         let result = await parseCommand("list-tree --workspace a").cmdOrDie.run(.defaultEnv, .emptyStdin)
         assertEquals(result.exitCode.rawValue, 0)
@@ -46,7 +48,7 @@ final class ListTreeTest: XCTestCase {
     }
 
     /// Floating windows are not part of the tiling tree
-    func testRunIgnoresFloatingWindows() async {
+    @Test func testRunIgnoresFloatingWindows() async {
         let workspace = Workspace.get(byName: "a")
         TestWindow.new(id: 1, parent: workspace.rootTilingContainer)
         TestWindow.new(id: 2, parent: workspace.floatingWindowsContainer)
@@ -55,14 +57,14 @@ final class ListTreeTest: XCTestCase {
         assertEquals(result.stdout, ["workspace a", "  h_tiles", "    window 1"])
     }
 
-    func testRunEmptyWorkspace() async {
+    @Test func testRunEmptyWorkspace() async {
         _ = Workspace.get(byName: "a")
         let result = await parseCommand("list-tree --workspace a").cmdOrDie.run(.defaultEnv, .emptyStdin)
         assertEquals(result.exitCode.rawValue, 0)
         assertEquals(result.stdout, ["workspace a", "  h_tiles"])
     }
 
-    func testRunSeveralWorkspacesAreSorted() async {
+    @Test func testRunSeveralWorkspacesAreSorted() async {
         TestWindow.new(id: 1, parent: Workspace.get(byName: "b").rootTilingContainer)
         TestWindow.new(id: 2, parent: Workspace.get(byName: "a").rootTilingContainer)
         let result = await parseCommand("list-tree --workspace b a").cmdOrDie.run(.defaultEnv, .emptyStdin)
@@ -77,7 +79,7 @@ final class ListTreeTest: XCTestCase {
         ])
     }
 
-    func testRunJson() async {
+    @Test func testRunJson() async {
         _ = nestedWorkspace()
         let result = await parseCommand("list-tree --workspace a --json").cmdOrDie.run(.defaultEnv, .emptyStdin)
         assertEquals(result.exitCode.rawValue, 0)

@@ -12,7 +12,7 @@ public struct ListTreeCmdArgs: CmdArgs {
             "--json": trueBoolFlag(\.json),
         ],
         posArgs: [],
-        conflictingOptions: [
+        conflictingFlags: [
             ["--focused", "--workspace"],
         ],
     )

@@ -6,7 +6,7 @@ struct ListTreeCommand: Command {
     /*conforms*/ let shouldResetClosedWindowsCache = false
 
     func run(_ env: CmdEnv, _ io: CmdIo) -> BinaryExitCode {
-        let focus = focus
+        let focus = globalFocus
         let workspaces: [Workspace] = args.focused
             ? [focus.workspace]
             : args.workspaces
@@ -47,13 +47,15 @@ private struct TreeNodeJson: Encodable {
 
     let type: String
     let layout: String?
-    let windowId: UInt32?
+    let windowId: UInt64?
+    let windowIdNative: UInt32?
     let children: [TreeNodeJson]?
 
     enum CodingKeys: String, CodingKey {
         case type
         case layout
         case windowId = "window-id"
+        case windowIdNative = "window-id-native"
         case children
     }
 
@@ -61,12 +63,13 @@ private struct TreeNodeJson: Encodable {
     static func of(_ node: TreeNode) -> TreeNodeJson {
         switch node.tilingTreeNodeCasesOrDie() {
             case .window(let window):
-                TreeNodeJson(type: windowType, layout: nil, windowId: window.windowId, children: nil)
+                TreeNodeJson(type: windowType, layout: nil, windowId: window.windowId.rawId, windowIdNative: (window.app as? MacApp)?.nativeWindowId(of: window.windowId), children: nil)
             case .tilingContainer(let container):
                 TreeNodeJson(
                     type: containerType,
                     layout: toLayoutString(tc: container),
                     windowId: nil,
+                    windowIdNative: nil,
                     children: container.children.map { of($0) },
                 )
         }
